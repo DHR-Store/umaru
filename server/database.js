@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const initSqlJs = require('sql.js');
 
-// Use /tmp on Vercel, local database folder otherwise
+// Vercel provides only /tmp as writable; local uses a database folder
 const dbPath = process.env.VERCEL
   ? '/tmp/visitors.db'
   : path.join(__dirname, '..', 'database', 'visitors.db');
@@ -24,11 +24,15 @@ if (!process.env.VERCEL) {
 
 /**
  * Load or create the database, then run migrations.
+ * Returns a promise that resolves when the database is ready.
  */
 async function initDatabase() {
-  const SQL = await initSqlJs();
-  let fileBuffer;
+  // Tell sql.js exactly where to find its .wasm file
+  const SQL = await initSqlJs({
+    locateFile: file => path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file)
+  });
 
+  let fileBuffer;
   if (fs.existsSync(dbPath)) {
     fileBuffer = fs.readFileSync(dbPath);
   }
@@ -256,8 +260,11 @@ function getVisitorCount(visitorId) {
   return count;
 }
 
+// Immediately start initialising the database and export a promise
+const ready = initDatabase();
+
 module.exports = {
-  initDatabase,
+  ready,               // so routes can await it
   insertVisitor,
   getVisitors,
   getStats,
