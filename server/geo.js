@@ -1,7 +1,7 @@
 /**
- * IP geolocation module using free ip-api.com service.
- * Returns country, region, city, timezone from IP address.
- * Falls back to 'Unknown' if lookup fails.
+ * IP geolocation module using the free ip-api.com service (no API key required).
+ * Returns country, region, city, timezone.
+ * Falls back to 'Unknown' on any error.
  */
 const https = require('https');
 
@@ -22,7 +22,8 @@ function getGeoFromIP(ip) {
       });
     }
 
-    const url = `https://ipapi.co/${ip}/json/`;
+    // Use ip-api.com (free, no key required, 45 requests/minute per IP)
+    const url = `https://ip-api.com/json/${ip}?fields=country,regionName,city,timezone`;
 
     https.get(url, (res) => {
       let data = '';
@@ -30,15 +31,17 @@ function getGeoFromIP(ip) {
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.error) throw new Error(json.reason);
+          if (json.status === 'fail') {
+            throw new Error(json.message || 'Lookup failed');
+          }
           resolve({
-            country: json.country_name || 'Unknown',
-            region: json.region || 'Unknown',
+            country: json.country || 'Unknown',
+            region: json.regionName || 'Unknown',
             city: json.city || 'Unknown',
             timezone: json.timezone || 'Unknown'
           });
         } catch (e) {
-          console.error('Geo lookup failed:', e.message);
+          console.error('Geo lookup error:', e.message);
           resolve({
             country: 'Unknown',
             region: 'Unknown',
