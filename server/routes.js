@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  ready,                // the database ready promise
+  ready,
   insertVisitor,
   getVisitors,
   getStats,
@@ -28,11 +28,25 @@ router.use(async (req, res, next) => {
 
 /**
  * POST /api/visit - Record a new visit.
+ * Uses client‑provided geo if available, falls back to server lookup.
  */
 router.post('/visit', async (req, res) => {
   try {
     const ip = req.ip || req.socket.remoteAddress;
-    const geo = await getGeoFromIP(ip);
+
+    // Prefer client geo overrides (more reliable)
+    let geo;
+    if (req.body.country_override) {
+      geo = {
+        country: req.body.country_override || 'Unknown',
+        region: req.body.region_override || 'Unknown',
+        city: req.body.city_override || 'Unknown',
+        timezone: req.body.timezone_override || 'Unknown'
+      };
+    } else {
+      // Server-side lookup as fallback
+      geo = await getGeoFromIP(ip);
+    }
 
     let visitorId = (req.body.visitor_id && String(req.body.visitor_id).trim()) || uuidv4();
 
