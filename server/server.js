@@ -1,35 +1,37 @@
-/**
- * Main Express server.
- * - Serves static files from the /public folder.
- * - Mounts API routes.
- * - Configures trust proxy for correct IP detection.
- */
 const express = require('express');
 const path = require('path');
-const { initDatabase } = require('./database');
+const { ready } = require('./database');   // import the promise
 const apiRoutes = require('./routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Trust proxy to get real IP behind reverse proxies (Vercel, Nginx)
+// Trust proxy for real IP on Vercel
 app.set('trust proxy', true);
 
-// Parse JSON and URL-encoded bodies
+// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files from /public
+// Serve static files from /public (landing, admin, CSS, JS, images)
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Mount API routes under /api
+// Mount API routes (they will wait for DB to be ready)
 app.use('/api', apiRoutes);
 
-// Initialize database and start server
-initDatabase();
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Optional debug route (you can remove after confirming everything works)
+app.get('/debug', async (req, res) => {
+  try {
+    await ready;
+    res.send('Database OK');
+  } catch (err) {
+    res.status(500).send(`Database error: ${err.message}`);
+  }
 });
 
-module.exports = app; // for Vercel serverless
+// Start the server locally; on Vercel the function is invoked differently
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
+
+module.exports = app;
