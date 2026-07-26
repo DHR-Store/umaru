@@ -1,27 +1,4 @@
-/* Minimal full-screen image styling */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.fullscreen-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.fullscreen-bg img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Ensures image covers area without distortion */
-  display: block;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+.fullscreen-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+.fullscreen-bg img { width: 100%; height: 100%; object-fit: cover; display: block; }

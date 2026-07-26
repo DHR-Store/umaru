@@ -1,20 +1,13 @@
-/**
- * Database module using sql.js (pure JS SQLite).
- * The database is loaded from and saved to `database/visitors.db`.
- * On Vercel, the writable path is `/tmp/visitors.db`.
- */
 const fs = require('fs');
 const path = require('path');
 const initSqlJs = require('sql.js');
 
-// Vercel provides only /tmp as writable; local uses a database folder
 const dbPath = process.env.VERCEL
   ? '/tmp/visitors.db'
   : path.join(__dirname, '..', 'database', 'visitors.db');
 
 let db = null;
 
-// Ensure the local directory exists (only needed locally; Vercel's /tmp always exists)
 if (!process.env.VERCEL) {
   const dbDir = path.join(__dirname, '..', 'database');
   if (!fs.existsSync(dbDir)) {
@@ -22,12 +15,7 @@ if (!process.env.VERCEL) {
   }
 }
 
-/**
- * Load or create the database, then run migrations.
- * Returns a promise that resolves when the database is ready.
- */
 async function initDatabase() {
-  // Tell sql.js exactly where to find its .wasm file
   const SQL = await initSqlJs({
     locateFile: file => path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file)
   });
@@ -66,18 +54,12 @@ async function initDatabase() {
   console.log('Database initialized successfully.');
 }
 
-/**
- * Write the current database state to the .db file.
- */
 function saveDatabase() {
   const data = db.export();
   const buffer = Buffer.from(data);
   fs.writeFileSync(dbPath, buffer);
 }
 
-/**
- * Insert a new visitor record and return the inserted ID.
- */
 function insertVisitor(data) {
   const record = {
     visitor_id: data.visitor_id || 'unknown',
@@ -108,23 +90,10 @@ function insertVisitor(data) {
   `);
 
   stmt.bind([
-    record.visitor_id,
-    record.timestamp,
-    record.ip,
-    record.country,
-    record.region,
-    record.city,
-    record.timezone,
-    record.browser_name,
-    record.browser_version,
-    record.os,
-    record.device_type,
-    record.screen_resolution,
-    record.language,
-    record.referrer,
-    record.user_agent,
-    record.is_returning,
-    record.visit_number
+    record.visitor_id, record.timestamp, record.ip, record.country, record.region,
+    record.city, record.timezone, record.browser_name, record.browser_version,
+    record.os, record.device_type, record.screen_resolution, record.language,
+    record.referrer, record.user_agent, record.is_returning, record.visit_number
   ]);
 
   stmt.step();
@@ -133,62 +102,37 @@ function insertVisitor(data) {
   return db.exec('SELECT last_insert_rowid()')[0].values[0][0];
 }
 
-/**
- * Get paginated visitors with optional search and filters.
- */
 function getVisitors({ page = 1, limit = 20, search, country, city, startDate, endDate }) {
   const offset = (page - 1) * limit;
-  let where = [];
-  let params = [];
+  let where = [], params = [];
 
   if (search) {
     where.push(`(ip LIKE ? OR country LIKE ? OR city LIKE ? OR browser_name LIKE ? OR os LIKE ?)`);
     const s = `%${search}%`;
     params.push(s, s, s, s, s);
   }
-  if (country) {
-    where.push(`country = ?`);
-    params.push(country);
-  }
-  if (city) {
-    where.push(`city = ?`);
-    params.push(city);
-  }
-  if (startDate) {
-    where.push(`timestamp >= ?`);
-    params.push(startDate);
-  }
-  if (endDate) {
-    where.push(`timestamp <= ?`);
-    params.push(endDate);
-  }
+  if (country) { where.push(`country = ?`); params.push(country); }
+  if (city) { where.push(`city = ?`); params.push(city); }
+  if (startDate) { where.push(`timestamp >= ?`); params.push(startDate); }
+  if (endDate) { where.push(`timestamp <= ?`); params.push(endDate); }
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const countStmt = db.prepare(`SELECT COUNT(*) as total FROM visitors ${whereClause}`);
   countStmt.bind(params);
   let total = 0;
-  if (countStmt.step()) {
-    total = countStmt.getAsObject().total;
-  }
+  if (countStmt.step()) total = countStmt.getAsObject().total;
   countStmt.free();
 
   const stmt = db.prepare(`SELECT * FROM visitors ${whereClause} ORDER BY id DESC LIMIT ? OFFSET ?`);
-  const allParams = params.concat([limit, offset]);
-  stmt.bind(allParams);
+  stmt.bind(params.concat([limit, offset]));
 
   const rows = [];
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject());
-  }
+  while (stmt.step()) rows.push(stmt.getAsObject());
   stmt.free();
-
   return { total, page, limit, data: rows };
 }
 
-/**
- * Get aggregated statistics for the dashboard.
- */
 function getStats() {
   const execResult = (query, params = []) => {
     const stmt = db.prepare(query);
@@ -206,17 +150,13 @@ function getStats() {
   const statsQuery = (query) => {
     const stmt = db.prepare(query);
     const results = [];
-    while (stmt.step()) {
-      results.push(stmt.getAsObject());
-    }
+    while (stmt.step()) results.push(stmt.getAsObject());
     stmt.free();
     return results;
   };
 
   return {
-    totalVisitors,
-    todayVisitors,
-    onlineVisitors,
+    totalVisitors, todayVisitors, onlineVisitors,
     countries: statsQuery('SELECT country, COUNT(*) as count FROM visitors GROUP BY country ORDER BY count DESC'),
     cities: statsQuery('SELECT city, COUNT(*) as count FROM visitors GROUP BY city ORDER BY count DESC'),
     browsers: statsQuery('SELECT browser_name, COUNT(*) as count FROM visitors GROUP BY browser_name ORDER BY count DESC'),
@@ -225,50 +165,30 @@ function getStats() {
   };
 }
 
-/**
- * Delete a visitor by ID.
- */
 function deleteVisitor(id) {
   db.run('DELETE FROM visitors WHERE id = ?', [id]);
   saveDatabase();
 }
 
-/**
- * Get all visitors for export.
- */
 function getAllVisitorsForExport() {
   const stmt = db.prepare('SELECT * FROM visitors ORDER BY id DESC');
   const rows = [];
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject());
-  }
+  while (stmt.step()) rows.push(stmt.getAsObject());
   stmt.free();
   return rows;
 }
 
-/**
- * Helper: count visits for a given visitor_id.
- */
 function getVisitorCount(visitorId) {
   const stmt = db.prepare('SELECT COUNT(*) as count FROM visitors WHERE visitor_id = ?');
   stmt.bind([visitorId]);
   let count = 0;
-  if (stmt.step()) {
-    count = stmt.getAsObject().count;
-  }
+  if (stmt.step()) count = stmt.getAsObject().count;
   stmt.free();
   return count;
 }
 
-// Immediately start initialising the database and export a promise
 const ready = initDatabase();
 
 module.exports = {
-  ready,               // so routes can await it
-  insertVisitor,
-  getVisitors,
-  getStats,
-  deleteVisitor,
-  getAllVisitorsForExport,
-  getVisitorCount
+  ready, insertVisitor, getVisitors, getStats, deleteVisitor, getAllVisitorsForExport, getVisitorCount
 };

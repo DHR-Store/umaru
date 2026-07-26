@@ -1,21 +1,12 @@
-/**
- * Express router defining all API endpoints.
- */
 const express = require('express');
 const router = express.Router();
 const {
-  ready,
-  insertVisitor,
-  getVisitors,
-  getStats,
-  deleteVisitor,
-  getAllVisitorsForExport,
-  getVisitorCount
+  ready, insertVisitor, getVisitors, getStats, deleteVisitor,
+  getAllVisitorsForExport, getVisitorCount
 } = require('./database');
 const { getGeoFromIP } = require('./geo');
 const { v4: uuidv4 } = require('uuid');
 
-// Middleware – wait until the database is fully initialised
 router.use(async (req, res, next) => {
   try {
     await ready;
@@ -26,15 +17,10 @@ router.use(async (req, res, next) => {
   }
 });
 
-/**
- * POST /api/visit - Record a new visit.
- * Uses client‑provided geo if available, falls back to server lookup.
- */
 router.post('/visit', async (req, res) => {
   try {
     const ip = req.ip || req.socket.remoteAddress;
-
-    // Prefer client geo overrides (more reliable)
+    // Use client-provided geo if available
     let geo;
     if (req.body.country_override) {
       geo = {
@@ -44,12 +30,10 @@ router.post('/visit', async (req, res) => {
         timezone: req.body.timezone_override || 'Unknown'
       };
     } else {
-      // Server-side lookup as fallback
       geo = await getGeoFromIP(ip);
     }
 
     let visitorId = (req.body.visitor_id && String(req.body.visitor_id).trim()) || uuidv4();
-
     const previousCount = getVisitorCount(visitorId);
     const isReturning = previousCount > 0 ? 1 : 0;
     const visitNumber = previousCount + 1;
@@ -82,63 +66,43 @@ router.post('/visit', async (req, res) => {
   }
 });
 
-/**
- * GET /api/visitors - Fetch paginated/filtered visitor list.
- */
 router.get('/visitors', (req, res) => {
   try {
     const { page = 1, limit = 20, search, country, city, start_date, end_date } = req.query;
     const result = getVisitors({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      search,
-      country,
-      city,
-      startDate: start_date,
-      endDate: end_date
+      page: parseInt(page), limit: parseInt(limit), search, country, city,
+      startDate: start_date, endDate: end_date
     });
     res.json(result);
   } catch (err) {
-    console.error('Error fetching visitors:', err);
+    console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-/**
- * GET /api/stats - Get aggregated dashboard statistics.
- */
 router.get('/stats', (req, res) => {
   try {
-    const stats = getStats();
-    res.json(stats);
+    res.json(getStats());
   } catch (err) {
-    console.error('Error fetching stats:', err);
+    console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-/**
- * DELETE /api/visitor/:id - Delete a visitor record.
- */
 router.delete('/visitor/:id', (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    deleteVisitor(id);
+    deleteVisitor(parseInt(req.params.id));
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting visitor:', err);
+    console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-/**
- * GET /api/export?format=csv|json - Export visitor data.
- */
 router.get('/export', (req, res) => {
   try {
     const format = req.query.format || 'json';
     const data = getAllVisitorsForExport();
-
     if (format === 'csv') {
       const headers = Object.keys(data[0] || {});
       let csv = headers.join(',') + '\n';
@@ -152,7 +116,7 @@ router.get('/export', (req, res) => {
       res.json(data);
     }
   } catch (err) {
-    console.error('Error exporting data:', err);
+    console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

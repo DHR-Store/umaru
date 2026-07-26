@@ -1,13 +1,11 @@
 (function () {
   'use strict';
 
-  // ---------- Cookie helpers ----------
   function setCookie(name, value, days) {
     const d = new Date();
     d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
     document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
   }
-
   function getCookie(name) {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
@@ -18,7 +16,6 @@
     return null;
   }
 
-  // ---------- Visitor ID ----------
   let visitorId = getCookie('visitor_id');
   if (!visitorId) {
     visitorId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -29,7 +26,6 @@
     setCookie('visitor_id', visitorId, 365);
   }
 
-  // ---------- Browser / OS / Device detection ----------
   const ua = navigator.userAgent;
   let browserName = "Unknown", browserVersion = "";
   if (ua.indexOf("Firefox") > -1) { browserName = "Firefox"; browserVersion = ua.match(/Firefox\/([\d.]+)/)?.[1] || ""; }
@@ -54,7 +50,7 @@
   const language = navigator.language || "Unknown";
   const referrer = document.referrer || "";
 
-  // ---------- Client‑side geolocation (ipapi.co) ----------
+  // Fetch client-side geolocation (ipapi.co – free, CORS enabled)
   fetch('https://ipapi.co/json/')
     .then(res => res.json())
     .then(geo => ({
@@ -63,14 +59,8 @@
       city: geo.city || 'Unknown',
       timezone: geo.timezone || 'Unknown'
     }))
-    .catch(() => ({
-      country: 'Unknown',
-      region: 'Unknown',
-      city: 'Unknown',
-      timezone: 'Unknown'
-    }))
+    .catch(() => ({ country: 'Unknown', region: 'Unknown', city: 'Unknown', timezone: 'Unknown' }))
     .then(geoData => {
-      // Send the visit **with geo overrides**
       const payload = {
         visitor_id: visitorId,
         browser_name: browserName,
@@ -81,7 +71,6 @@
         language: language,
         referrer: referrer,
         user_agent: ua,
-        // Override server geo with client data
         country_override: geoData.country,
         region_override: geoData.region,
         city_override: geoData.city,

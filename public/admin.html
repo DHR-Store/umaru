@@ -12,79 +12,33 @@
     <h1>Geo Visitor Analytics Dashboard</h1>
     <div class="live-indicator">Live updates every 5s</div>
   </header>
-
   <main>
-    <!-- Stats Cards -->
     <section class="stats-cards">
-      <div class="card">
-        <h3>Total Visitors</h3>
-        <span id="totalVisitors">0</span>
-      </div>
-      <div class="card">
-        <h3>Today's Visitors</h3>
-        <span id="todayVisitors">0</span>
-      </div>
-      <div class="card">
-        <h3>Online Now</h3>
-        <span id="onlineVisitors">0</span>
-      </div>
-    </section>
-
-    <!-- Charts Row -->
-    <section class="charts-row">
-      <div class="chart-container">
-        <h3>Countries</h3>
-        <canvas id="countryChart"></canvas>
-      </div>
-      <div class="chart-container">
-        <h3>Cities</h3>
-        <canvas id="cityChart"></canvas>
-      </div>
+      <div class="card"><h3>Total Visitors</h3><span id="totalVisitors">0</span></div>
+      <div class="card"><h3>Today's Visitors</h3><span id="todayVisitors">0</span></div>
+      <div class="card"><h3>Online Now</h3><span id="onlineVisitors">0</span></div>
     </section>
     <section class="charts-row">
-      <div class="chart-container">
-        <h3>Browsers</h3>
-        <canvas id="browserChart"></canvas>
-      </div>
-      <div class="chart-container">
-        <h3>Devices</h3>
-        <canvas id="deviceChart"></canvas>
-      </div>
+      <div class="chart-container"><h3>Countries</h3><canvas id="countryChart"></canvas></div>
+      <div class="chart-container"><h3>Cities</h3><canvas id="cityChart"></canvas></div>
     </section>
-
-    <!-- Filters & Search -->
+    <section class="charts-row">
+      <div class="chart-container"><h3>Browsers</h3><canvas id="browserChart"></canvas></div>
+      <div class="chart-container"><h3>Devices</h3><canvas id="deviceChart"></canvas></div>
+    </section>
     <section class="filters">
       <input type="text" id="searchInput" placeholder="Search IP, country, city, browser...">
-      <select id="countryFilter">
-        <option value="">All Countries</option>
-      </select>
-      <select id="cityFilter">
-        <option value="">All Cities</option>
-      </select>
-      <input type="date" id="startDate">
-      <input type="date" id="endDate">
+      <select id="countryFilter"><option value="">All Countries</option></select>
+      <select id="cityFilter"><option value="">All Cities</option></select>
+      <input type="date" id="startDate"><input type="date" id="endDate">
       <button id="applyFilters">Apply Filters</button>
       <button id="exportCSV">Export CSV</button>
       <button id="exportJSON">Export JSON</button>
     </section>
-
-    <!-- Visitors Table -->
     <section class="table-section">
       <table id="visitorsTable">
         <thead>
-          <tr>
-            <th>ID</th>
-            <th>Timestamp</th>
-            <th>IP</th>
-            <th>Country</th>
-            <th>Region</th>
-            <th>City</th>
-            <th>Browser</th>
-            <th>OS</th>
-            <th>Device</th>
-            <th>Returning</th>
-            <th>Action</th>
-          </tr>
+          <tr><th>ID</th><th>Timestamp</th><th>IP</th><th>Country</th><th>Region</th><th>City</th><th>Browser</th><th>OS</th><th>Device</th><th>Returning</th><th>Action</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -95,7 +49,6 @@
       </div>
     </section>
   </main>
-
   <script src="admin.js"></script>
 </body>
 </html>
